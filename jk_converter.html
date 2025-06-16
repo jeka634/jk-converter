@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>JK Конвертер</title>
+  <title>JK калькулятор</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script async src="https://telegram.org/js/telegram-web-app.js"></script> 
   <script>
@@ -31,12 +31,12 @@
   <div id="app" class="bg-white shadow-lg rounded-xl p-6 w-full max-w-md relative">
     <img src="jk-icon.png" alt="JK Logo" class="absolute top-4 right-4 w-8 h-8 rounded-full" />
 
-    <h1 class="text-2xl font-bold text-gray-800 mb-4">Конвертер $JK</h1>
+    <h1 class="text-2xl font-bold text-gray-800 mb-4">Калькулятор $JK</h1>
 
     <div class="text-sm text-gray-600 mb-4">
       <strong>Курс:</strong><br/>
       1 $JK = <span id="jk-usdt-display">0.000002233</span> USDT<br/>
-      1 USDT = <span id="usdt-rub-display">90.00</span> RUB
+      1 USDT = <span id="usdt-rub-display">85.00</span> RUB
     </div>
 
     <div class="grid grid-cols-2 gap-4 mb-4">
@@ -53,8 +53,8 @@
     <div class="mb-4">
       <label class="text-sm font-medium text-gray-700">Конвертация:</label>
       <select id="direction" class="w-full border border-gray-300 rounded px-3 py-2">
-        <option value="rub-to-jk">Из рублей в $JK</option>
-        <option value="jk-to-rub">Из $JK в рубли</option>
+        <option value="rub-to-jk">Из RUB в $JK</option>
+        <option value="jk-to-rub">Из $JK в RUB</option>
       </select>
     </div>
 
