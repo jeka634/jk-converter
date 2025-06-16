@@ -1,0 +1,129 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>JK Converter with TON Wallet</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script async src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script defer src="style.js"></script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen flex items-center justify-center p-4 text-gray-800 dark:text-gray-100 transition-colors">
+  <div id="app" class="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 w-full max-w-md relative space-y-4">
+    <button id="themeToggle" class="absolute top-2 left-2 text-sm px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded">🌙</button>
+
+    <img src="jk-icon.png" alt="JK Logo" class="absolute top-4 right-4 w-8 h-8 rounded-full" />
+    <button id="connectBtn" class="w-full bg-[#0088cc] hover:bg-[#007ab8] text-white font-semibold py-2 rounded-xl">
+      Подключить TON кошелёк
+    </button>
+    <div id="walletInfo" class="text-sm text-gray-700 dark:text-gray-300"></div>
+    <div id="balanceInfo" class="text-lg font-medium">Ваш баланс $JK: —</div>
+    <div class="text-sm">
+      <strong>Курс:</strong><br/>
+      1 $JK = <span id="jk-usdt-display">0.000002233</span> USDT<br/>
+      1 USDT = <span id="usdt-rub-display">90.00</span> RUB
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="text-xs">1 JK в USDT</label>
+        <input type="number" id="jk-usdt" value="0.000002233" step="any" class="w-full border rounded px-2 py-1 dark:bg-gray-700 dark:text-white" onchange="updateRates()"/>
+      </div>
+      <div>
+        <label class="text-xs">1 USDT в RUB</label>
+        <input type="number" id="usdt-rub" value="90.00" step="any" class="w-full border rounded px-2 py-1 dark:bg-gray-700 dark:text-white" onchange="updateRates()"/>
+      </div>
+    </div>
+    <div>
+      <label class="block text-sm font-medium">Направление конвертации</label>
+      <select id="direction" class="w-full border rounded px-3 py-2 dark:bg-gray-700 dark:text-white">
+        <option value="rub-to-jk">Рубли → $JK</option>
+        <option value="jk-to-rub">$JK → Рубли</option>
+      </select>
+    </div>
+    <div>
+      <label for="amount" class="block text-sm font-medium">Сумма</label>
+      <input type="number" id="amount" placeholder="500" step="any" class="w-full border rounded px-3 py-2 dark:bg-gray-700 dark:text-white"/>
+    </div>
+    <button onclick="convert()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-xl">
+      Рассчитать
+    </button>
+    <div id="result" class="mt-4 text-lg"></div>
+  </div>
+  <script type="module">
+    import { TonClient } from 'https://cdn.skypack.dev/@tonclient/core';
+    import { GaspumpJetton, JettonWallet } from 'https://cdn.skypack.dev/@gaspump/sdk';
+
+    const JK_CONTRACT = 'EQCktaxD_raMP6IARzMUL2XY-2hoe9N59xl11L6D8UOkqBI7';
+    let userAddress = null;
+    let walletAddress = null;
+    let client;
+    let jkJetton;
+
+    function initSdk() {
+      client = new TonClient({ network: { server_address: 'main.ton.dev' } });
+      jkJetton = new GaspumpJetton({ client, address: JK_CONTRACT });
+    }
+
+    async function connectWallet() {
+      if (!window.ton) {
+        alert('Откройте в Tonkeeper или установите расширение');
+        return;
+      }
+      try {
+        const permissions = await window.ton.requestPermissions({ permissions: ['tonClient'] });
+        userAddress = permissions.account;
+        document.getElementById('walletInfo').textContent = `Адрес: ${userAddress}`;
+        await loadBalance();
+      } catch (e) {
+        console.error(e);
+        alert('Не удалось подключить кошелёк');
+      }
+    }
+
+    async function getJettonWallet() {
+      walletAddress = await jkJetton.getWalletAddress(userAddress);
+      return walletAddress;
+    }
+
+    async function loadBalance() {
+      if (!userAddress) return;
+      initSdk();
+      await getJettonWallet();
+      const jw = new JettonWallet({ client, address: walletAddress });
+      const balBn = await jw.getBalance();
+      const balance = Number(balBn) / 1e9;
+      document.getElementById('balanceInfo').textContent = `Ваш баланс $JK: ${balance.toFixed(2)}`;
+    }
+
+    function updateRates() {
+      const jkToUsdt = parseFloat(document.getElementById('jk-usdt').value);
+      const usdtToRub = parseFloat(document.getElementById('usdt-rub').value);
+      document.getElementById('jk-usdt-display').textContent = jkToUsdt.toFixed(9);
+      document.getElementById('usdt-rub-display').textContent = usdtToRub.toFixed(2);
+    }
+
+    function convert() {
+      const amount = parseFloat(document.getElementById('amount').value);
+      const jkToUsdt = parseFloat(document.getElementById('jk-usdt').value);
+      const usdtToRub = parseFloat(document.getElementById('usdt-rub').value);
+      const direction = document.getElementById('direction').value;
+      if (isNaN(amount) || amount <= 0) {
+        document.getElementById('result').innerHTML = '<span class="text-red-500">Введите корректное число</span>'; return;
+      }
+      const jkToRub = jkToUsdt * usdtToRub;
+      let text;
+      if (direction === 'rub-to-jk') {
+        const jkAmt = amount / jkToRub;
+        text = `<strong>${amount.toFixed(2)} ₽</strong> = <strong>${jkAmt.toFixed(2)} $JK</strong>`;
+      } else {
+        const rubAmt = amount * jkToRub;
+        text = `<strong>${amount.toFixed(2)} $JK</strong> = <strong>${rubAmt.toFixed(2)} ₽</strong>`;
+      }
+      document.getElementById('result').innerHTML = text;
+    }
+
+    document.getElementById('connectBtn').addEventListener('click', connectWallet);
+  </script>
+</body>
+</html>
