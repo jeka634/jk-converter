@@ -1,0 +1,123 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>JK Конвертер</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script async src="https://telegram.org/js/telegram-web-app.js"></script> 
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      if (window.Telegram && Telegram.WebApp) {
+        Telegram.WebApp.ready();
+        Telegram.WebApp.expand();
+        Telegram.WebApp.MainButton.setText('Поделиться результатом');
+        Telegram.WebApp.MainButton.hide();
+        Telegram.WebApp.MainButton.onClick(() => {
+          shareResult();
+        });
+      }
+    });
+
+    function showMainButtonIfReady() {
+      if (window.Telegram && Telegram.WebApp && currentResult) {
+        Telegram.WebApp.MainButton.show();
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+  <div id="app" class="bg-white shadow-lg rounded-xl p-6 w-full max-w-md relative">
+    <img src="jk-icon.png" alt="JK Logo" class="absolute top-4 right-4 w-8 h-8 rounded-full" />
+
+    <h1 class="text-2xl font-bold text-gray-800 mb-4">Конвертер $JK</h1>
+
+    <div class="text-sm text-gray-600 mb-4">
+      <strong>Курс:</strong><br/>
+      1 $JK = <span id="jk-usdt-display">0.000002233</span> USDT<br/>
+      1 USDT = <span id="usdt-rub-display">90.00</span> RUB
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <label class="text-xs text-gray-600">1 JK в USDT</label>
+        <input type="number" id="jk-usdt" value="0.000002233" step="any" class="w-full border border-gray-300 rounded px-2 py-1" onchange="updateRates()"/>
+      </div>
+      <div>
+        <label class="text-xs text-gray-600">1 USDT в RUB</label>
+        <input type="number" id="usdt-rub" value="90.00" step="any" class="w-full border border-gray-300 rounded px-2 py-1" onchange="updateRates()"/>
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <label class="text-sm font-medium text-gray-700">Конвертация:</label>
+      <select id="direction" class="w-full border border-gray-300 rounded px-3 py-2">
+        <option value="rub-to-jk">Из рублей в $JK</option>
+        <option value="jk-to-rub">Из $JK в рубли</option>
+      </select>
+    </div>
+
+    <label for="amount" class="block text-sm font-medium text-gray-700 mb-1">Введите сумму:</label>
+    <input type="number" id="amount" placeholder="Например: 500" step="any" class="w-full border border-gray-300 rounded px-3 py-2 mb-4"/>
+
+    <button onclick="convert()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition duration-200">
+      Рассчитать
+    </button>
+
+    <div id="result" class="mt-6 text-gray-800 text-lg"></div>
+  </div>
+
+  <script>
+    let currentResult = "";
+
+    function updateRates() {
+      document.getElementById("jk-usdt-display").textContent = parseFloat(document.getElementById("jk-usdt").value).toFixed(9);
+      document.getElementById("usdt-rub-display").textContent = parseFloat(document.getElementById("usdt-rub").value).toFixed(2);
+    }
+
+    function convert() {
+      const amount = parseFloat(document.getElementById('amount').value);
+      const jkToUsdt = parseFloat(document.getElementById('jk-usdt').value);
+      const usdtToRub = parseFloat(document.getElementById('usdt-rub').value);
+      const direction = document.getElementById('direction').value;
+
+      if (isNaN(amount) || amount <= 0 || isNaN(jkToUsdt) || isNaN(usdtToRub)) {
+        document.getElementById('result').innerHTML = `<span class="text-red-500">Введите корректные значения.</span>`;
+        currentResult = "";
+        return;
+      }
+
+      const jkToRub = jkToUsdt * usdtToRub;
+      let resultText = "";
+
+      if (direction === "rub-to-jk") {
+        const jkAmount = amount / jkToRub;
+        resultText = `<strong>${amount.toLocaleString('ru-RU', {maximumFractionDigits: 2})} рублей</strong> =<br/><strong>${jkAmount.toLocaleString('ru-RU', {maximumFractionDigits: 2})}</strong> JK`;
+        currentResult = `💰 ${amount.toFixed(2)} RUB = ${jkAmount.toFixed(2)} JK`;
+      } else {
+        const rubAmount = amount * jkToRub;
+        resultText = `<strong>${amount.toLocaleString('ru-RU', {maximumFractionDigits: 2})} JK</strong> =<br/><strong>${rubAmount.toLocaleString('ru-RU', {maximumFractionDigits: 2})}</strong> рублей`;
+        currentResult = `💰 ${amount.toFixed(2)} JK = ${rubAmount.toFixed(2)} RUB`;
+      }
+
+      document.getElementById('result').innerHTML = resultText;
+      showMainButtonIfReady();
+    }
+
+    function shareResult() {
+      if (!currentResult) {
+        alert("Сначала выполните расчёт.");
+        return;
+      }
+
+      if (window.Telegram && Telegram.WebApp) {
+        Telegram.WebApp.sendData(currentResult);
+        Telegram.WebApp.close();
+      } else {
+        alert(currentResult);
+      }
+    }
+  </script>
+</body>
+</html>
